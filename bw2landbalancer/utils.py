@@ -1,6 +1,7 @@
 import collections
 import itertools
 
+
 class ParameterNameGenerator(object):
     """Class that counts each time a value is looked up."""
     def __init__(self):

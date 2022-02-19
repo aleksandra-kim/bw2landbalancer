@@ -1,17 +1,18 @@
 import pytest
 from bw2data.tests import bw2test
-from brightway2 import Database, projects
+import bw2data as bd
 from shutil import rmtree
 import numpy as np
+
 
 @pytest.fixture
 @bw2test
 def data_for_testing():
     # Make sure we are starting off with an empty project
-    assert not len(Database('test_db'))
-    assert not len(Database('biosphere'))
+    assert not len(bd.Database('test_db'))
+    assert not len(bd.Database('biosphere'))
 
-    biosphere = Database("biosphere")
+    biosphere = bd.Database("biosphere")
     biosphere.register()
     biosphere.write({
         ("biosphere", "Transformation, from 1"): {
@@ -50,9 +51,9 @@ def data_for_testing():
             'unit': 'kg'
         },
     })
-    assert len(Database('biosphere')) == 5
+    assert len(bd.Database('biosphere')) == 5
 
-    test_db = Database("test_db")
+    test_db = bd.Database("test_db")
     test_db.register()
     test_db.write({
         ("test_db", "X"): {
@@ -617,6 +618,6 @@ def data_for_testing():
             ],
         },
     })
-    yield {'project': projects.current}
+    yield {'project': bd.projects.current}
 
-    rmtree(projects.dir, ignore_errors=True)
+    rmtree(bd.projects.dir, ignore_errors=True)

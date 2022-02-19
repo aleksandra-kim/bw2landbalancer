@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 from bw2landbalancer.database_land_balancer import DatabaseLandBalancer
 from bw2landbalancer.activity_land_balancer import ActivityLandBalancer
-from brightway2 import get_activity
+import bw2data as bd
+
 
 def get_matrix_data_sums_for_test(ab, matrix_data):
     """Function to check matrix data in tests
@@ -25,6 +26,7 @@ def get_matrix_data_sums_for_test(ab, matrix_data):
     in_totals = np.sum(in_filter * samples, axis=0)
     out_totals = np.sum(out_filter * samples, axis=0)
     return in_totals, out_totals
+
 
 def test_no_such_database(data_for_testing):
     with pytest.raises(ValueError, match="Database no such db not imported"):
@@ -58,15 +60,17 @@ def test_identify_exchanges(data_for_testing):
     assert set(wb.all_land_keys) == set(expected_all_keys)
     assert len(wb.all_land_keys) == len(expected_all_keys)
 
+
 def test_land_exchange_formulas_removed(data_for_testing):
     """ Make sure formulas are properly removed from exchanges"""
-    act = get_activity(("test_db", "A"))
-    exc = [exc for exc in act.exchanges() if exc.input.key==('biosphere', 'Transformation, from 1')][0]
-    assert exc['formula']=='some_formula'
+    act = bd.get_activity(("test_db", "A"))
+    exc = [exc for exc in act.exchanges() if exc.input.key == ('biosphere', 'Transformation, from 1')][0]
+    assert exc['formula'] == 'some_formula'
     wb = DatabaseLandBalancer(database_name="test_db", biosphere="biosphere")
     ab = ActivityLandBalancer(('test_db', 'A'), wb)
     exc = [exc for exc in ab.act.exchanges() if exc.input.key == ('biosphere', 'Transformation, from 1')][0]
-    assert exc.get('formula', 'Nothing')=='Nothing'
+    assert exc.get('formula', 'Nothing') == 'Nothing'
+
 
 def test_initially_unprocessed(data_for_testing):
     """ """
@@ -92,6 +96,7 @@ def test_reset(data_for_testing):
     assert getattr(ab, "static_balance") is None
     assert getattr(ab, "activity_params") == []
 
+
 def test_rebalance_default_ratio_1(data_for_testing):
     """ """
     wb = DatabaseLandBalancer(database_name="test_db", biosphere="biosphere")
@@ -110,9 +115,10 @@ def test_rebalance_default_ratio_1(data_for_testing):
     in_sum, out_sum = get_matrix_data_sums_for_test(ab, matrix_data)
     assert np.allclose(in_sum/out_sum, ab.static_ratio)
     wb.add_samples_for_act(ab.act, 5)
-    assert len(wb.matrix_indices)==4
+    assert len(wb.matrix_indices) == 4
     assert wb.matrix_samples.shape[0] == 4
     assert wb.matrix_samples.shape[1] == 5
+
 
 def test_rebalance_inverse_ratio_1(data_for_testing):
     """ """
@@ -129,6 +135,7 @@ def test_rebalance_inverse_ratio_1(data_for_testing):
     in_sum, out_sum = get_matrix_data_sums_for_test(ab, matrix_data)
     assert np.allclose(out_sum/in_sum, ab.static_ratio)
 
+
 def test_rebalance_default_ratio_2(data_for_testing):
     """ """
     wb = DatabaseLandBalancer(database_name="test_db", biosphere="biosphere")
@@ -144,6 +151,7 @@ def test_rebalance_default_ratio_2(data_for_testing):
     in_sum, out_sum = get_matrix_data_sums_for_test(ab, matrix_data)
     assert np.allclose(in_sum/out_sum, ab.static_ratio)
 
+
 def test_rebalance_inverse_ratio_2(data_for_testing):
     """ """
     wb = DatabaseLandBalancer(database_name="test_db", biosphere="biosphere")
@@ -154,10 +162,11 @@ def test_rebalance_inverse_ratio_2(data_for_testing):
     assert ab.static_ratio == 0.5
     assert ab.static_balance == -3
     matrix_data = ab.generate_samples(5)
-    assert matrix_data[0][0].shape[1]==5
+    assert matrix_data[0][0].shape[1] == 5
     assert matrix_data[0][0].shape[0] == 4
     in_sum, out_sum = get_matrix_data_sums_for_test(ab, matrix_data)
     assert np.allclose(out_sum/in_sum, ab.static_ratio)
+
 
 def test_rebalance_set_static_one_input(data_for_testing):
     """ """
@@ -185,12 +194,13 @@ def test_rebalance_set_static_one_input(data_for_testing):
     assert ab.activity_params[0]['loc'] == exc_initial['amount']
     assert ab.activity_params[0]['uncertainty type'] == 0
     matrix_data = ab.generate_samples(5)
-    assert len(matrix_data)==1
-    assert matrix_data[0][0].shape[1]==5
-    assert matrix_data[0][0].shape[0]==1
+    assert len(matrix_data) == 1
+    assert matrix_data[0][0].shape[1] == 5
+    assert matrix_data[0][0].shape[0] == 1
     assert np.allclose(np.ones(shape=(1, 5)), matrix_data[0][0])
     assert len(matrix_data[0][1]) == 1
     assert matrix_data[0][1][0] == (("biosphere", "Transformation, from 1"), ('test_db', 'G'))
+
 
 def test_rebalance_set_static_one_output(data_for_testing):
     """ """
@@ -261,10 +271,10 @@ def test_rebalance_skip_no_uncertainty(data_for_testing):
 def test_all_matrix_data_and_presamples(data_for_testing):
     """ """
     wb = DatabaseLandBalancer(database_name="test_db", biosphere="biosphere")
-    assert wb.matrix_indices==[]
+    assert wb.matrix_indices == []
     assert wb.matrix_samples is None
     wb.add_samples_for_all_acts(5)
-    assert len(wb.matrix_indices)==18
+    assert len(wb.matrix_indices) == 18
     assert wb.matrix_samples.shape == (18, 5)
     id_, dirpath = wb.create_presamples(id_="test")
     indices_0 = np.load(dirpath/"{}.0.indices.npy".format(id_))

@@ -18,7 +18,7 @@ setup(
     license="MIT; LICENSE.txt",
     author_email="pascal.lesage@polymtl.ca",
     install_requires=[
-        'brightway2',
+        "bw2data>=4.0.dev11",
         'numpy',
         'pyprind',
         'presamples',
@@ -26,7 +26,7 @@ setup(
     url="https://gitlab.com/pascal.lesage/bw2landbalance",
     long_description=readme,
     long_description_content_type="text/markdown",
-    description='Used to create balanced LCA land transformation exchange samples to override unbalanced samples in Brightway2.',
+    description='Used to create balanced LCA land transformation exchange samples to override unbalanced ones in BW.',
     classifiers=[
         'Intended Audience :: End Users/Desktop',
         'Intended Audience :: Developers',

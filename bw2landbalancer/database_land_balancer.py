@@ -1,11 +1,12 @@
-from brightway2 import *
+import bw2data as bd
 import numpy as np
 import warnings
 import pyprind
 from .activity_land_balancer import ActivityLandBalancer
 from presamples import create_presamples_package, split_inventory_presamples
 
-class DatabaseLandBalancer():
+
+class DatabaseLandBalancer:
     """Used to create balanced land samples to override unbalanced sample
 
     Developed to bring some sanity to independently sampled land exchange
@@ -61,17 +62,21 @@ class DatabaseLandBalancer():
        matrix_samples: list
            List of numpy arrays with samples
     """
-    def __init__(self, database_name, biosphere='biosphere3', group="land",
-                 land_from_patterns=['Transformation, from'],
-                 land_to_patterns=['Transformation, to'],
-                 ):
+    def __init__(
+        self,
+        database_name,
+        biosphere='biosphere3',
+        group="land",
+        land_from_patterns=('Transformation, from', ),
+        land_to_patterns=('Transformation, to', ),
+    ):
 
         # Check that the database exists in the current project
         print("Validating data")
-        if database_name not in databases:
+        if database_name not in bd.databases:
             raise ValueError("Database {} not imported".format(database_name))
         self.database_name = database_name
-        if biosphere not in databases:
+        if biosphere not in bd.databases:
             raise ValueError("Database {} not imported".format(biosphere))
         self.biosphere = biosphere
         self.group = group
@@ -80,12 +85,12 @@ class DatabaseLandBalancer():
 
         print("Getting information on land transformation exchanges")
         self.land_in_keys = []
-        for ef in Database(self.biosphere):
+        for ef in bd.Database(self.biosphere):
             for land_from_pattern in land_from_patterns:
                 if land_from_pattern in ef['name']:
                     self.land_in_keys.append(ef.key)
         self.land_out_keys = []
-        for ef in Database(self.biosphere):
+        for ef in bd.Database(self.biosphere):
             for land_to_pattern in land_to_patterns:
                 if land_to_pattern in ef['name']:
                     self.land_out_keys.append(ef.key)
@@ -109,7 +114,7 @@ class DatabaseLandBalancer():
         """
         ab = ActivityLandBalancer(act_key, self)
         for data in ab.generate_samples(iterations):
-            if len(data[1][0])==2:
+            if len(data[1][0]) == 2:
                 for row in data[1]:
                     self.matrix_indices.append((row[0], row[1], 'biosphere'))
             else:
@@ -131,12 +136,11 @@ class DatabaseLandBalancer():
                Number of iterations in generated samples
 
         """
-        act_keys = [act.key for act in Database(self.database_name)]
+        act_keys = [act.key for act in bd.Database(self.database_name)]
         for act_key in pyprind.prog_bar(act_keys):
-            self.add_samples_for_act(get_activity(act_key), iterations)
+            self.add_samples_for_act(bd.get_activity(act_key), iterations)
 
-    def create_presamples(self, name=None, id_=None, overwrite=False, dirpath=None,
-                            seed='sequential'):
+    def create_presamples(self, name=None, id_=None, overwrite=False, dirpath=None, seed='sequential'):
         """Create a presamples package from generated samples
 
         Parameters
@@ -148,14 +152,17 @@ class DatabaseLandBalancer():
            overwrite: bool, default=False
                If True, replace an existing presamples package with the same ``\id_`` if it exists.
            dirpath: str, optional
-               An optional directory path where presamples can be created. If None, a subdirectory in the ``project`` folder.
+               An optional directory path where presamples can be created.
+               If None, a subdirectory in the ``project`` folder.
            seed: {None, int, "sequential"}, optional, default="sequential"
                Seed used by indexer to return array columns in random order. Can be an integer, "sequential" or None.
         """
         if not all([self.matrix_samples is not None, self.matrix_indices]):
-            warnings.warn("No presamples created because there were no matrix data. "
-                      "Make sure to run `add_samples_for_all_acts` or "
-                      "`add_samples_for_act` for a set of acts first.")
+            warnings.warn(
+                "No presamples created because there were no matrix data. "
+                "Make sure to run `add_samples_for_all_acts` or "
+                "`add_samples_for_act` for a set of acts first."
+            )
             return
 
         id_, dirpath = create_presamples_package(

@@ -1,11 +1,12 @@
-from brightway2 import *
+import bw2data as bd
 import warnings
 from .utils import ParameterNameGenerator
 from presamples.models.parameterized import ParameterizedBrightwayModel as PBM
 from numpy import inf
 import copy
 
-class ActivityLandBalancer():
+
+class ActivityLandBalancer:
     """Balances land exchange samples at the activity level
 
     Upon instantiation, will identify and classify all land exchanges.
@@ -24,7 +25,7 @@ class ActivityLandBalancer():
     """
 
     def __init__(self, act_key, database_land_balancer):
-        self.act = get_activity(act_key)
+        self.act = bd.get_activity(act_key)
         for keys in [
             'land_in_keys', 'land_out_keys',
             'all_land_keys', 'group'
@@ -67,15 +68,15 @@ class ActivityLandBalancer():
 
         self._move_land_formulas_to_exchange()
         self._move_activity_parameters_to_temp()
-        parameters.new_activity_parameters(self.activity_params, self.group)
-        parameters.add_exchanges_to_group(self.group, self.act)
-        parameters.recalculate()
+        bd.parameters.new_activity_parameters(self.activity_params, self.group)
+        bd.parameters.add_exchanges_to_group(self.group, self.act)
+        bd.parameters.recalculate()
         pbm = PBM(self.group)
         pbm.load_parameter_data()
         pbm.calculate_stochastic(iterations, update_amounts=True)
         pbm.calculate_matrix_presamples()
         self.matrix_data = pbm.matrix_data
-        parameters.remove_from_group(self.group, self.act)
+        bd.parameters.remove_from_group(self.group, self.act)
         # This adds activity parameters that are actually not wanted. Remove them.
         self.act['parameters'] = []
         self.act.save()
@@ -188,7 +189,7 @@ class ActivityLandBalancer():
 
         self.in_total = in_total
         self.out_total = out_total
-        self.static_ratio = in_total / out_total if out_total!=0 else inf
+        self.static_ratio = in_total / out_total if out_total != 0 else inf
         self.static_balance = in_total - out_total
         self.activity_params.append(
             {
@@ -308,8 +309,7 @@ class ActivityLandBalancer():
         """
         excs = [
             exc for exc in self.act.exchanges()
-            if exc.input.key in self.all_land_keys
-               and exc.get('uncertainty type', 0) != 0
+            if exc.input.key in self.all_land_keys and exc.get('uncertainty type', 0) != 0
         ]
         if len(excs) != 1:
             raise ValueError("Should only have one variable land exchange for 'set_static' strategy")
@@ -340,9 +340,10 @@ class ActivityLandBalancer():
             param['maximum'] = exc.get('maximum')
         return param
 
-    def _get_term(self, terms, on_empty=None, min_terms=None):
+    @staticmethod
+    def _get_term(terms, on_empty=None, min_terms=None):
         """Translate a set of string terms to a single term to use in a formula """
-        if min_terms is not None and len(terms) < min_terms :
+        if min_terms is not None and len(terms) < min_terms:
             raise ValueError(
                 "Expected at least {} terms, got {}".format(
                     min_terms, len(terms)
@@ -385,11 +386,13 @@ class ActivityLandBalancer():
             return False
         if self.strategy == 'skip':
             return True
-        if any([
-            getattr(self, 'static_ratio', None) is None,
-            getattr(self, 'static_balance', None) is None,
-            not getattr(self, 'activity_params', None),
-            ]):
+        if any(
+            [
+                getattr(self, 'static_ratio', None) is None,
+                getattr(self, 'static_balance', None) is None,
+                not getattr(self, 'activity_params', None),
+            ]
+        ):
             return False
         return True
 
